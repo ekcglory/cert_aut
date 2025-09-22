@@ -80,7 +80,7 @@ export const generateCertificatePDF = async (
     // Load and add badge/medal
     try {
       const badgeBase64 = await loadImageAsBase64('/badgesv-01.svg');
-      pdf.addImage(badgeBase64, 'SVG', 20, 100, 40, 40);
+      pdf.addImage(badgeBase64, 'PNG', 20, 100, 40, 40);
     } catch (error) {
       console.warn('Could not load badge image');
       // Simple golden circle fallback

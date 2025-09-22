@@ -61,7 +61,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             
             setProcessedCount(prev => prev + 1);
             
-            // Simulate processing delay
+              await new Promise(resolve => setTimeout(resolve, 800));
             await new Promise(resolve => setTimeout(resolve, 1500));
           }
         }

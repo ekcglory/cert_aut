@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Mail, BookOpen, Zap, AlertCircle } from 'lucide-react';
 import { SUPPORTED_COURSES } from '../utils/constants';
 import { ProcessedCandidate } from '../App';
+import { generateCertificatePDF } from '../utils/certificateGenerator';
 
 interface ManualEntryFormProps {
   onGenerateCertificate: (candidate: ProcessedCandidate, course: string) => void;
@@ -58,7 +59,10 @@ export const ManualEntryForm: React.FC<ManualEntryFormProps> = ({ onGenerateCert
         status: 'pending'
       };
 
-      // Generate the certificate
+      // Generate and download the certificate immediately
+      await generateCertificatePDF(candidate, formData.course);
+      
+      // Also show preview
       onGenerateCertificate(candidate, formData.course);
 
       // Reset form after successful generation
@@ -66,6 +70,8 @@ export const ManualEntryForm: React.FC<ManualEntryFormProps> = ({ onGenerateCert
       setErrors({});
     } catch (error) {
       console.error('Error generating certificate:', error);
+      // Show error to user
+      setErrors({ course: 'Failed to generate certificate. Please try again.' });
     } finally {
       setIsGenerating(false);
     }
