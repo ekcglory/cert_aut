@@ -16,21 +16,35 @@ A modern web application for automating certificate generation and distribution 
 - Data Analysis/Analytics
 - MS Office for Administrators  
 - Python Programming
+- Cybersecurity
 
-## CSV Format Requirements
+## File Format Requirements
 
-Your CSV file must contain the following columns:
+Your file must contain the following columns and can be in any of these formats:
+
+**Supported Formats:**
+- CSV (.csv)
+- Excel (.xlsx, .xls)
+- OpenDocument Spreadsheet (.ods)
+
+**Required Columns:**
 
 ```csv
-Name,Email,Courses
+Name,Email,Course
 John Doe,john@example.com,Data Analysis/Analytics
 Jane Smith,jane@example.com,"Data Analysis/Analytics, Python Programming"
 ```
+
+**Alternative Column Names Supported:**
+- Course/Courses (both work)
+- Name/Full Name/Candidate Name
+- Email/Email Address/E-mail
 
 **Important Notes:**
 - Multiple courses should be comma-separated
 - Email addresses must be valid
 - Names should be properly formatted as they appear on certificates
+- The system automatically maps common course name variations to standard names
 
 ## Admin Access
 

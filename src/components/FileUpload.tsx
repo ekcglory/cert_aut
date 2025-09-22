@@ -1,22 +1,17 @@
 import React, { useCallback, useState } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle, X } from 'lucide-react';
-import Papa from 'papaparse';
+import { parseSpreadsheetFile, validateCSVData } from '../utils/csvParser';
 import { ProcessedCandidate } from '../App';
 
 interface FileUploadProps {
   onCandidatesLoaded: (candidates: ProcessedCandidate[]) => void;
 }
 
-interface RawCandidate {
-  Name: string;
-  Email: string;
-  Courses: string;
-}
-
 const SUPPORTED_COURSES = [
   'Data Analysis/Analytics',
   'MS Office for Administrators',
-  'Python Programming'
+  'Python Programming',
+  'Cybersecurity'
 ];
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onCandidatesLoaded }) => {
@@ -25,7 +20,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onCandidatesLoaded }) =>
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState('');
 
-  const processCandidates = (rawData: RawCandidate[]): ProcessedCandidate[] => {
+  const processCandidates = (rawData: any[]): ProcessedCandidate[] => {
     return rawData.map((row, index) => {
       const courses = row.Courses.split(',').map(course => course.trim());
       const validCourses = courses.filter(course => 
@@ -47,42 +42,46 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onCandidatesLoaded }) =>
   };
 
   const handleFile = useCallback((file: File) => {
-    if (!file.name.endsWith('.csv')) {
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    const supportedFormats = ['csv', 'xlsx', 'xls', 'ods'];
+    
+    if (!fileExtension || !supportedFormats.includes(fileExtension)) {
       setUploadStatus('error');
-      setStatusMessage('Please upload a CSV file only.');
+      setStatusMessage('Please upload a CSV, Excel (.xlsx, .xls), or OpenDocument (.ods) file.');
       return;
     }
 
     setIsProcessing(true);
     setUploadStatus('idle');
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        try {
-          const processedCandidates = processCandidates(results.data as RawCandidate[]);
-          
-          if (processedCandidates.length === 0) {
-            setUploadStatus('error');
-            setStatusMessage('No valid candidates found. Please check your CSV format.');
-          } else {
-            onCandidatesLoaded(processedCandidates);
-            setUploadStatus('success');
-            setStatusMessage(`Successfully loaded ${processedCandidates.length} candidates`);
-          }
-        } catch (error) {
+    parseSpreadsheetFile(file)
+      .then((rawData) => {
+        // Validate the data
+        const validationErrors = validateCSVData(rawData);
+        if (validationErrors.length > 0) {
           setUploadStatus('error');
-          setStatusMessage('Error processing CSV file. Please check the format.');
+          setStatusMessage(`Data validation errors: ${validationErrors.slice(0, 3).join('; ')}${validationErrors.length > 3 ? '...' : ''}`);
+          setIsProcessing(false);
+          return;
+        }
+        
+        const processedCandidates = processCandidates(rawData);
+        
+        if (processedCandidates.length === 0) {
+          setUploadStatus('error');
+          setStatusMessage('No valid candidates found. Please check your file format and ensure it contains Name, Email, and Course columns.');
+        } else {
+          onCandidatesLoaded(processedCandidates);
+          setUploadStatus('success');
+          setStatusMessage(`Successfully loaded ${processedCandidates.length} candidates with ${processedCandidates.reduce((sum, c) => sum + c.courses.length, 0)} total course enrollments`);
         }
         setIsProcessing(false);
-      },
-      error: (error) => {
+      })
+      .catch((error) => {
         setUploadStatus('error');
-        setStatusMessage(`Error reading file: ${error.message}`);
+        setStatusMessage(`Error processing file: ${error.message}`);
         setIsProcessing(false);
-      }
-    });
+      });
   }, [onCandidatesLoaded]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -116,9 +115,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onCandidatesLoaded }) =>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="font-semibold text-blue-900 mb-2">CSV Format Requirements:</h3>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Columns: Name, Email, Courses</li>
+            <li>• <strong>Supported formats:</strong> CSV, Excel (.xlsx, .xls), OpenDocument (.ods)</li>
+            <li>• <strong>Required columns:</strong> Name, Email, Course/Courses</li>
             <li>• Multiple courses separated by commas</li>
-            <li>• Supported courses: Data Analysis/Analytics, MS Office for Administrators, Python Programming</li>
+            <li>• <strong>Supported courses:</strong> Data Analysis/Analytics, MS Office for Administrators, Python Programming, Cybersecurity</li>
           </ul>
         </div>
 
@@ -138,17 +138,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onCandidatesLoaded }) =>
           >
             <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {isDragOver ? 'Drop your CSV file here' : 'Upload Candidate CSV'}
+              {isDragOver ? 'Drop your file here' : 'Upload Candidate Data'}
             </h3>
             <p className="text-gray-600 mb-4">
-              Drag and drop your CSV file here, or click to browse
+              Drag and drop your file here, or click to browse
             </p>
             <label className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 cursor-pointer transition-colors duration-200">
               <FileText className="w-5 h-5 mr-2" />
               Choose File
               <input
                 type="file"
-                accept=".csv"
+                accept=".csv,.xlsx,.xls,.ods"
                 onChange={handleFileInput}
                 className="hidden"
               />
@@ -159,7 +159,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onCandidatesLoaded }) =>
         {isProcessing && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-            <p className="text-blue-800 font-medium">Processing CSV file...</p>
+            <p className="text-blue-800 font-medium">Processing file...</p>
           </div>
         )}
 

@@ -18,6 +18,13 @@ export interface ProcessedCandidate extends Candidate {
   status: 'pending' | 'processing' | 'completed' | 'error';
 }
 
+const SUPPORTED_COURSES = [
+  'Data Analysis/Analytics',
+  'MS Office for Administrators',
+  'Python Programming',
+  'Cybersecurity'
+];
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [candidates, setCandidates] = useState<ProcessedCandidate[]>([]);
