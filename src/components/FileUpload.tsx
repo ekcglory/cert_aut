@@ -1,18 +1,12 @@
 import React, { useCallback, useState } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { parseSpreadsheetFile, validateCSVData } from '../utils/csvParser';
+import { SUPPORTED_COURSES } from '../utils/constants';
 import { ProcessedCandidate } from '../App';
 
 interface FileUploadProps {
   onCandidatesLoaded: (candidates: ProcessedCandidate[]) => void;
 }
-
-const SUPPORTED_COURSES = [
-  'Data Analysis/Analytics',
-  'MS Office for Administrators',
-  'Python Programming',
-  'Cybersecurity'
-];
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onCandidatesLoaded }) => {
   const [isDragOver, setIsDragOver] = useState(false);
